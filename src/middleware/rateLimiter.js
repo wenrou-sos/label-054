@@ -1,19 +1,6 @@
 const rateLimit = require('express-rate-limit');
-const RedisStore = require('rate-limit-redis');
-const Redis = require('ioredis');
 const config = require('../config');
 const { AppError } = require('./errorHandler');
-
-let redisClient = null;
-
-if (config.env !== 'test') {
-  redisClient = new Redis({
-    host: config.redis.host,
-    port: config.redis.port,
-    password: config.redis.password,
-    db: config.redis.db
-  });
-}
 
 const createLimiter = (options = {}) => {
   const {
@@ -23,15 +10,9 @@ const createLimiter = (options = {}) => {
     keyGenerator = (req) => req.ip
   } = options;
 
-  const store = redisClient ? new RedisStore({
-    sendCommand: (...args) => redisClient.call(...args),
-    prefix: 'rate_limit:'
-  }) : undefined;
-
   return rateLimit({
     windowMs,
     max,
-    store,
     keyGenerator,
     handler: (req, res, next) => {
       next(new AppError('RATE_LIMIT_EXCEEDED'));
